@@ -1832,11 +1832,11 @@ declare namespace WAWebJS {
         qr: {
             maxRetries: number;
         },
-        phone: never;
+        phone?: never;
     }
 
     interface LinkWithPhoneNumber {
-        qr: never;
+        qr?: never;
         phone: {
             number: string;
         }
