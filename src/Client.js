@@ -302,12 +302,12 @@ class Client extends EventEmitter {
             };
 
             const handleLinkWithPhoneNumber = async () => {
-                const LINK_WITH_PHONE_BUTTON = '[data-testid="link-device-qrcode-alt-linking-hint"]';
-                const PHONE_NUMBER_INPUT = '[data-testid="link-device-phone-number-input"]';
-                const NEXT_BUTTON = '[data-testid="link-device-phone-number-entry-next-button"]';
-                const CODE_CONTAINER = '[data-testid="link-with-phone-number-code-cells"]';
-                const GENERATE_NEW_CODE_BUTTON = '[data-testid="popup-controls-ok"]';
-                const LINK_WITH_PHONE_VIEW = '[data-testid="link-device-phone-number-code-view"]';
+                const LINK_WITH_PHONE_BUTTON = 'span[role="button"]';
+                const PHONE_NUMBER_INPUT = 'input[type="text"]';
+                const NEXT_BUTTON = 'div[role="button"] > div > div';
+                const CODE_CONTAINER = 'div[dir="ltr"]';
+                const GENERATE_NEW_CODE_BUTTON = 'div[role=dialog] div[role="button"]';
+                const LINK_WITH_PHONE_VIEW = '#app';
 
                 await page.exposeFunction('codeChanged', async (code) => {
                     /**
@@ -379,8 +379,6 @@ class Client extends EventEmitter {
 
                     let code = getCode();
 
-                    window.codeChanged(code);
-
                     const entirePageObserver = new MutationObserver(() => {
                         const generateNewCodeButton = document.querySelector(selectors.GENERATE_NEW_CODE_BUTTON);
                         if (generateNewCodeButton) {
@@ -396,7 +394,7 @@ class Client extends EventEmitter {
                     const linkWithPhoneView = document.querySelector(selectors.LINK_WITH_PHONE_VIEW);
                     const linkWithPhoneViewObserver = new MutationObserver(() => {
                         const newCode = getCode();
-                        if (newCode !== code) {
+                        if (newCode !== code && newCode !== '') {
                             window.codeChanged(newCode);
                             code = newCode;
                         }
