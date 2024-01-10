@@ -305,7 +305,7 @@ class Client extends EventEmitter {
                 const LINK_WITH_PHONE_BUTTON = 'span[role="button"]';
                 const PHONE_NUMBER_INPUT = 'input[type="text"]';
                 const NEXT_BUTTON = 'div[role="button"] > div > div';
-                const CODE_CONTAINER = 'div[dir="ltr"]';
+                const CODE_CONTAINER = 'div[dir="ltr"][aria-label="Enter code on phone:"]';
                 const GENERATE_NEW_CODE_BUTTON = 'div[role=dialog] div[role="button"]';
                 const LINK_WITH_PHONE_VIEW = '#app';
 
