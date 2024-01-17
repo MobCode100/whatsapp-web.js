@@ -302,12 +302,13 @@ class Client extends EventEmitter {
             };
 
             const handleLinkWithPhoneNumber = async () => {
-                const LINK_WITH_PHONE_BUTTON = 'span[role="button"]';
-                const PHONE_NUMBER_INPUT = 'input[type="text"]';
-                const NEXT_BUTTON = 'div[role="button"] > div > div';
-                const CODE_CONTAINER = 'div[dir="ltr"][aria-label="Enter code on phone:"]';
-                const GENERATE_NEW_CODE_BUTTON = 'div[role=dialog] div[role="button"]';
-                const LINK_WITH_PHONE_VIEW = '#app';
+                const LINK_WITH_PHONE_BUTTON = '//span[text() = "Link with phone number"]';
+                const PHONE_NUMBER_INPUT = '//input[@type="text" and @aria-label="Type your phone number."]';
+                const NEXT_BUTTON = '//div[text() = "Next"]';
+                const CODE_CONTAINER = '//div[@dir="ltr" and @aria-label="Enter code on phone:"]';
+                const GENERATE_NEW_CODE_BUTTON = '//div[@role="dialog"]//div[@role="button"]';
+                const LINK_WITH_PHONE_VIEW = '//*[@id="app"]';
+
 
                 await page.exposeFunction('codeChanged', async (code) => {
                     /**
@@ -318,34 +319,37 @@ class Client extends EventEmitter {
                     this.emit(Events.CODE_RECEIVED, code);
                 });
                 const clickOnLinkWithPhoneButton = async () => {
-                    await page.waitForSelector(LINK_WITH_PHONE_BUTTON, { timeout: 0 });                    
-                    await page.click(LINK_WITH_PHONE_BUTTON);
+                    const button = await page.waitForXPath(LINK_WITH_PHONE_BUTTON, { timeout: 0 });                    
+                    await button.click();
                 };
 
                 const typePhoneNumber = async () => {
-                    await page.waitForSelector(PHONE_NUMBER_INPUT);
-                    const inputValue = await page.$eval(PHONE_NUMBER_INPUT, el => el.value);
-                    await page.click(PHONE_NUMBER_INPUT);
+                    const input = await page.waitForXPath(PHONE_NUMBER_INPUT);
+                    const inputValue =  await (await input.getProperty('value')).jsonValue()
+                    await input.click();
                     for (let i = 0; i < inputValue.length; i++) {
                         await page.keyboard.press('Backspace');
                     }
-                    await page.type(PHONE_NUMBER_INPUT, this.options.linkingMethod.phone.number);
+                    await input.type(this.options.linkingMethod.phone.number);
                 };
 
                 await clickOnLinkWithPhoneButton();
                 await typePhoneNumber();
-                await page.click(NEXT_BUTTON);
+                await (await page.$x(NEXT_BUTTON))[0].click();
                   
-                await page.evaluate(async function (selectors) {
-                    function waitForElementToExist(selector, timeout = 60000) {
+                await page.evaluate(async function (xpaths) {
+                    function getElementByXPath(xpath){
+                        return document.evaluate(xpath,document,null,XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue
+                    }   
+                    function waitForElementToExist(xpath, timeout = 60000) {
                         return new Promise((resolve, reject) => {
-                            if (document.querySelector(selector)) {
-                                return resolve(document.querySelector(selector));
+                            if (getElementByXPath(xpath)) {
+                                return resolve(getElementByXPath(xpath));
                             }
 
                             const observer = new MutationObserver(() => {
-                                if (document.querySelector(selector)) {
-                                    resolve(document.querySelector(selector));
+                                if (getElementByXPath(xpath)) {
+                                    resolve(getElementByXPath(xpath));
                                     observer.disconnect();
                                 }
                             });
@@ -359,7 +363,7 @@ class Client extends EventEmitter {
                                 setTimeout(() => {
                                     reject(
                                         new Error(
-                                            `waitForElementToExist: ${selector} not found in time`
+                                            `waitForElementToExist: ${xpath} not found in time`
                                         )
                                     );
                                 }, timeout);
@@ -367,10 +371,10 @@ class Client extends EventEmitter {
                         });
                     }
 
-                    await waitForElementToExist(selectors.CODE_CONTAINER);
+                    await waitForElementToExist(xpaths.CODE_CONTAINER);
 
                     const getCode = () => {
-                        const codeContainer = document.querySelector(selectors.CODE_CONTAINER);
+                        const codeContainer = getElementByXPath(xpaths.CODE_CONTAINER);
                         const code = Array.from(codeContainer.children)[0];
 
                         const cells = Array.from(code.children);
@@ -380,7 +384,7 @@ class Client extends EventEmitter {
                     let code = getCode();
 
                     const entirePageObserver = new MutationObserver(() => {
-                        const generateNewCodeButton = document.querySelector(selectors.GENERATE_NEW_CODE_BUTTON);
+                        const generateNewCodeButton = getElementByXPath(xpaths.GENERATE_NEW_CODE_BUTTON);
                         if (generateNewCodeButton) {
                             generateNewCodeButton.click();
                             return;
@@ -391,7 +395,7 @@ class Client extends EventEmitter {
                         childList: true,
                     });
                     
-                    const linkWithPhoneView = document.querySelector(selectors.LINK_WITH_PHONE_VIEW);
+                    const linkWithPhoneView = getElementByXPath(xpaths.LINK_WITH_PHONE_VIEW);
                     const linkWithPhoneViewObserver = new MutationObserver(() => {
                         const newCode = getCode();
                         if (newCode !== code && newCode !== '') {
