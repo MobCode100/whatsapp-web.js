@@ -2,14 +2,17 @@
 
 exports.WhatsWebURL = 'https://web.whatsapp.com/';
 
+const WEB_VERSION = '2.2407.5';
+
 exports.DefaultOptions = {
     puppeteer: {
         headless: true,
         defaultViewport: null
     },
-    webVersion: '2.2346.52',
+    webVersion: WEB_VERSION,
     webVersionCache: {
-        type: 'local',
+        type: 'remote',
+        remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${WEB_VERSION}.html`,
     },
     authTimeoutMs: 0,
     qrMaxRetries: 0,
