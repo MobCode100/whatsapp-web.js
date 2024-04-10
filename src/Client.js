@@ -302,7 +302,7 @@ class Client extends EventEmitter {
             };
 
             const handleLinkWithPhoneNumber = async () => {
-                const LINK_WITH_PHONE_BUTTON = '//span[text() = "Link with phone number"]';
+                const LINK_WITH_PHONE_BUTTON = '//span[@role="button" and text() = "Link with phone number"]';
                 const PHONE_NUMBER_INPUT = '//input[@type="text" and @aria-label="Type your phone number."]';
                 const NEXT_BUTTON = '//div[text() = "Next"]';
                 const CODE_CONTAINER = '//div[@dir="ltr" and @aria-label="Enter code on phone:"]';
@@ -319,7 +319,8 @@ class Client extends EventEmitter {
                     this.emit(Events.CODE_RECEIVED, code);
                 });
                 const clickOnLinkWithPhoneButton = async () => {
-                    const button = await page.waitForXPath(LINK_WITH_PHONE_BUTTON, { timeout: 0 });                    
+                    const button = await page.waitForXPath(LINK_WITH_PHONE_BUTTON, { timeout: 0 }); 
+                    await page.waitForTimeout(1000); // Prevent error                    
                     await button.click();
                 };
 
