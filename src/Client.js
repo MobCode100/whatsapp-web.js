@@ -302,10 +302,10 @@ class Client extends EventEmitter {
             };
 
             const handleLinkWithPhoneNumber = async () => {
-                const LINK_WITH_PHONE_BUTTON = '//span[@role="button" and text() = "Link with phone number"]';
-                const PHONE_NUMBER_INPUT = '//input[@type="text" and @aria-label="Type your phone number."]';
-                const NEXT_BUTTON = '//div[text() = "Next"]';
-                const CODE_CONTAINER = '//div[@dir="ltr" and @aria-label="Enter code on phone:"]';
+                const LINK_WITH_PHONE_BUTTON = '//span[@role="button" and @tabindex="0"]';
+                const PHONE_NUMBER_INPUT = '//input[@type="text"]';
+                const NEXT_BUTTON = '//div[@style="flex-grow: 1;"]/text()/..';
+                const CODE_CONTAINER = '//div[@dir="ltr"]';
                 const GENERATE_NEW_CODE_BUTTON = '//div[@role="dialog"]//div[@role="button"]';
                 const LINK_WITH_PHONE_VIEW = '//*[@id="app"]';
 
