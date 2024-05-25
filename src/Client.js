@@ -326,11 +326,8 @@ class Client extends EventEmitter {
 
                 const typePhoneNumber = async () => {
                     const input = await page.waitForXPath(PHONE_NUMBER_INPUT);
-                    const inputValue =  await (await input.getProperty('value')).jsonValue()
                     await input.click();
-                    for (let i = 0; i < inputValue.length; i++) {
-                        await page.keyboard.press('Backspace');
-                    }
+                    await input.click({ clickCount: 3 })
                     await input.type(this.options.linkingMethod.phone.number);
                 };
 
