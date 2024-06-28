@@ -2,7 +2,7 @@
 
 exports.WhatsWebURL = 'https://web.whatsapp.com/';
 
-const WEB_VERSION = '2.2412.54';
+const WEB_VERSION = '2.2413.51-beta';
 
 exports.DefaultOptions = {
     puppeteer: {
