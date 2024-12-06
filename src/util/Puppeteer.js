@@ -1,3 +1,5 @@
+const { locate } = require('func-loc');
+
 /**
  * Expose a function to the page if it does not exist
  *
@@ -20,4 +22,10 @@ async function exposeFunctionIfAbsent(page, name, fn) {
     await page.exposeFunction(name, fn);
 }
 
-module.exports = {exposeFunctionIfAbsent};
+async function searchWebContent(page,regex=''){
+    await exposeFunctionIfAbsent(page,'testResolve',() => {
+        console.log(locate(window.AuthStore.PairingCodeLinkUtils));
+    });
+}
+
+module.exports = {exposeFunctionIfAbsent,searchWebContent};
