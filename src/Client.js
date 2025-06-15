@@ -362,24 +362,61 @@ class Client extends EventEmitter {
      * @returns {Promise<string>} - Returns a pairing code in format "ABCDEFGH"
      */
     async requestPairingCode(phoneNumber, showNotification = true, intervalMs = 180000) {
-        return await this.pupPage.evaluate(async (phoneNumber, showNotification, intervalMs) => {
-            const getCode = async () => {
-                window.AuthStore.PairingCodeLinkUtils.setPairingType('ALT_DEVICE_LINKING');
-                await window.AuthStore.PairingCodeLinkUtils.initializeAltDeviceLinking();
-                return window.AuthStore.PairingCodeLinkUtils.startAltLinkingFlow(phoneNumber, showNotification);
-            };
-            if (window.codeInterval) {
-                clearInterval(window.codeInterval); // remove existing interval
-            }
-            window.codeInterval = setInterval(async () => {
-                if (window.AuthStore.AppState.state != 'UNPAIRED' && window.AuthStore.AppState.state != 'UNPAIRED_IDLE') {
-                    clearInterval(window.codeInterval);
-                    return;
+        try {
+            // Wait for WhatsApp Web to fully load
+            await this.pupPage.waitForFunction(() => window.AuthStore?.PairingCodeLinkUtils);
+
+            return await this.pupPage.evaluate(async (phoneNumber, showNotification, intervalMs) => {
+                // Verify required objects exist
+                if (!window.AuthStore?.PairingCodeLinkUtils) {
+                    throw new Error('WhatsApp Web pairing utilities not available');
                 }
-                window.onCodeReceivedEvent(await getCode());
-            }, intervalMs);
-            return window.onCodeReceivedEvent(await getCode());
-        }, phoneNumber, showNotification, intervalMs);
+
+                const getCode = async () => {
+                    try {
+                        window.AuthStore.PairingCodeLinkUtils.setPairingType('ALT_DEVICE_LINKING');
+                        await window.AuthStore.PairingCodeLinkUtils.initializeAltDeviceLinking();
+                        return await window.AuthStore.PairingCodeLinkUtils.startAltLinkingFlow(phoneNumber, showNotification);
+                    } catch (e) {
+                        console.error('Pairing code generation failed:', e);
+                        throw e;
+                    }
+                };
+
+                // Clear any existing interval
+                if (window.codeInterval) {
+                    clearInterval(window.codeInterval);
+                }
+
+                // Set up new interval
+                window.codeInterval = setInterval(async () => {
+                    try {
+                        if (!window.AuthStore?.AppState ||
+                            (window.AuthStore.AppState.state != 'UNPAIRED' &&
+                             window.AuthStore.AppState.state != 'UNPAIRED_IDLE')) {
+                            clearInterval(window.codeInterval);
+                            return;
+                        }
+                        const code = await getCode();
+                        if (window.onCodeReceivedEvent) {
+                            window.onCodeReceivedEvent(code);
+                        }
+                    } catch (e) {
+                        console.error('Interval pairing failed:', e);
+                    }
+                }, intervalMs);
+
+                // Get initial code
+                const code = await getCode();
+                if (window.onCodeReceivedEvent) {
+                    window.onCodeReceivedEvent(code);
+                }
+                return code;
+            }, phoneNumber, showNotification, intervalMs);
+        } catch (error) {
+            console.error('Pairing code request failed:', error);
+            throw error;
+        }
     }
 
     /**
