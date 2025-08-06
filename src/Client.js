@@ -36,6 +36,8 @@ const {exposeFunctionIfAbsent} = require('./util/Puppeteer');
  * @param {string} options.userAgent - User agent to use in puppeteer
  * @param {string} options.ffmpegPath - Ffmpeg path to use when formatting videos to webp while sending stickers 
  * @param {boolean} options.bypassCSP - Sets bypassing of page's Content-Security-Policy.
+ * @param {string} options.deviceName - Sets the device name of a current linked device., i.e.: 'TEST'.
+ * @param {string} options.browserName - Sets the browser name of a current linked device, i.e.: 'Firefox'.
  * @param {object} options.proxyAuthentication - Proxy Authentication object.
  * 
  * @fires Client#qr
@@ -94,6 +96,7 @@ class Client extends EventEmitter {
      */
     async inject() {
         await this.pupPage.waitForFunction('window.Debug?.VERSION != undefined', {timeout: this.options.authTimeoutMs});
+        await this.setDeviceName(this.options.deviceName, this.options.browserName);
         const pairWithPhoneNumber = this.options.pairWithPhoneNumber;
         const version = await this.getWWebVersion();
         const isCometOrAbove = parseInt(version.split('.')?.[1]) >= 3000;
@@ -141,7 +144,7 @@ class Client extends EventEmitter {
             }
 
             // Register qr/code events
-            if(pairWithPhoneNumber.phoneNumber){
+            if (pairWithPhoneNumber.phoneNumber) {
                 await exposeFunctionIfAbsent(this.pupPage, 'onCodeReceivedEvent', async (code) => {
                     /**
                     * Emitted when a pairing code is received
@@ -152,7 +155,7 @@ class Client extends EventEmitter {
                     this.emit(Events.CODE_RECEIVED, code);
                     return code;
                 });
-                this.requestPairingCode(pairWithPhoneNumber.phoneNumber,pairWithPhoneNumber.showNotification,pairWithPhoneNumber.intervalMs);
+                this.requestPairingCode(pairWithPhoneNumber.phoneNumber, pairWithPhoneNumber.showNotification, pairWithPhoneNumber.intervalMs);
             } else {
                 let qrRetries = 0;
                 await exposeFunctionIfAbsent(this.pupPage, 'onQRChangedEvent', async (qr) => {
@@ -178,9 +181,9 @@ class Client extends EventEmitter {
                     const staticKeyB64 = window.AuthStore.Base64Tools.encodeB64(noiseKeyPair.staticKeyPair.pubKey);
                     const identityKeyB64 = window.AuthStore.Base64Tools.encodeB64(registrationInfo.identityKeyPair.pubKey);
                     const advSecretKey = await window.AuthStore.RegistrationUtils.getADVSecretKey();
-                    const platform =  window.AuthStore.RegistrationUtils.DEVICE_PLATFORM;
+                    const platform = window.AuthStore.RegistrationUtils.DEVICE_PLATFORM;
                     const getQR = (ref) => ref + ',' + staticKeyB64 + ',' + identityKeyB64 + ',' + advSecretKey + ',' + platform;
-                    
+
                     window.onQRChangedEvent(getQR(window.AuthStore.Conn.ref)); // initial qr
                     window.AuthStore.Conn.on('change:ref', (_, ref) => { window.onQRChangedEvent(getQR(ref)); }); // future QR changes
                 });
@@ -842,6 +845,19 @@ class Client extends EventEmitter {
         return await this.pupPage.evaluate(() => {
             return window.Debug.VERSION;
         });
+    }
+
+    async setDeviceName(deviceName, browserName) {
+        (deviceName || browserName) && await this.pupPage.evaluate((deviceName, browserName) => {
+            const func = window.require('WAWebMiscBrowserUtils').info;
+            window.require('WAWebMiscBrowserUtils').info = () => {
+                return {
+                    ...func(),
+                    ...(deviceName ? { os: deviceName } : {}),
+                    ...(browserName ? { name: browserName } : {})
+                };
+            };
+        }, deviceName, browserName);
     }
 
     /**
